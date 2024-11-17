@@ -66,10 +66,10 @@ Then if you search for "utility" like this:
 it will report something like this:
 
 ```
-Temporary directory for index: /tmp/vogonnote.bleve3090128185
-Search results: 2 matches, took 88.939µs
+Temporary directory for index: /tmp/vogonnote.bleve2477464051
+Search results: 1 matches, took 128.246µs
 
-Note 0 in file /home/someuser/Documents/vogonnote.dir/tests/2024-11-17.note
+Note 0 in file /home/aleks/Documents/vogonnote.dir/tests/2024-11-17.note
 Found note: 
 -------------------
 Date: 2024-11-16 00:00:00 +0000 UTC
@@ -78,7 +78,6 @@ Today I created this wonderful utility that will conquer the world!
 It will show everyone how smart... 
 Never mind!
 -------------------
-
 ```
 
 ## How vogonnote works
