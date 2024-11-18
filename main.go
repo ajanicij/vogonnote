@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -118,10 +119,23 @@ func run() error {
 		if verbose {
 			fmt.Fprintf(os.Stderr, "Walk: directory: %v: entry: %s\n", info.IsDir(), path)
 		}
-		if !info.IsDir() {
-			err = processFile(path, index)
+
+		// If this is a directory, skip.
+		if info.IsDir() {
+			return nil
 		}
 
+		matched, err := regexp.Match(cfg.NoteFilePattern, []byte(path))
+		if err != nil {
+			return nil
+		}
+
+		// If the file name does not match the pattern, skip.
+		if !matched {
+			return nil
+		}
+
+		err = processFile(path, index)
 		if err != nil {
 			return err
 		}
