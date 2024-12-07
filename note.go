@@ -21,7 +21,6 @@ Date: %v
 Text:
 %s
 -------------------
-
 `, note.Date, strings.Join(note.Text, "\n"))
 }
 

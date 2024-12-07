@@ -60,3 +60,11 @@ Same as s016, but moved code for reading a notes file to note.go.
 
 ## s018
 vogonnote initial version.
+
+## s019-substring
+Check if a string is a substring of another string (using
+strings.Contains).
+
+## s020-list-substring
+Check if a string is a substring of a list of lines of text.
+Performs  case-insensitive search.

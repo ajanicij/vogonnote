@@ -6,11 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
-	"github.com/blevesearch/bleve/v2"
-	"github.com/pelletier/go-toml/v2"
+	"github.com/BurntSushi/toml"
 )
 
 const IndexPrefix = "vogonnote.bleve"
@@ -32,7 +30,7 @@ func Usage() {
 Copyright Aleksandar Janicijevic ajanicij@yahoo.com 2024 
 Usage:
 `,
-		os.Args[0])
+		filepath.Base(os.Args[0]))
 	flag.PrintDefaults()
 	os.Exit(1)
 }
@@ -92,24 +90,7 @@ func run() error {
 		return err
 	}
 
-	// Create temporary directory for bleve index.
-	dname, err := os.MkdirTemp("", IndexPrefix)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Temporary directory for index: %s\n", dname)
-
-	defer os.RemoveAll(dname)
-
-	// Create index.
-	mapping := bleve.NewIndexMapping()
-	index, err := bleve.New(dname, mapping)
-	if err != nil {
-		index, err = bleve.Open(dname)
-		if err != nil {
-			return err
-		}
-	}
+	result := []Note{}
 
 	// Walk through all files in vogonnote directory.
 	err = filepath.Walk(cfg.RootDir, func(path string, info os.FileInfo, err error) error {
@@ -135,76 +116,48 @@ func run() error {
 			return nil
 		}
 
-		err = processFile(path, index)
+		hits, err := processFile(path, *key)
 		if err != nil {
 			return err
 		}
+		result = append(result, hits...)
 		return nil
 	})
 	if err != nil {
 		return err
 	}
 
-	// Search for key and display result.
-	query := bleve.NewMatchQuery(*key)
-	search := bleve.NewSearchRequest(query)
-	searchResults, err := index.Search(search)
-	fmt.Printf("Search results: %v\n", searchResults)
-	if err != nil {
-		return err
-	}
-
-	hits := searchResults.Hits
-	for _, hit := range hits {
-		if verbose {
-			fmt.Fprintf(os.Stderr, "Hit: %v\n", hit)
-		}
-		list := strings.Split(hit.ID, "^")
-		if len(list) != 3 {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Warning: %s has %d fields, expected 3\n", hit.ID, len(list))
-			}
-			continue
-		}
-		path := list[0]
-		n, err := strconv.Atoi(list[2])
-		if err != nil {
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Warning: %s is not a number\n", list[2])
-			}
-			continue
-		}
-		fmt.Printf("Note %d in file %s\n", n, path)
-		note, err := getNote(path, n)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s\n", err)
-			continue
-		}
-		fmt.Printf("Found note: %v\n", note.String())
+	for _, foundNote := range result {
+		fmt.Printf("%s\n", foundNote.String())
 	}
 
 	return nil
 }
 
-func processFile(path string, index bleve.Index) error {
+func Contains(list []string, str string) bool {
+	strLower := strings.ToLower(str)
+	for _, line := range list {
+		lineLower := strings.ToLower(line)
+		if strings.Contains(lineLower, strLower) {
+			return true
+		}
+	}
+	return false
+}
+
+func processFile(path string, key string) ([]Note, error) {
 	notes, err := readNotesFile(path)
 	if err != nil {
-		return fmt.Errorf("Error opening %s: %v\n", path, err)
+		return nil, fmt.Errorf("Error opening %s: %v\n", path, err)
 	}
 
-	for i, note := range notes {
-		key := fmt.Sprintf("%s^%s^%d", note.Path, note.Date, i)
+	result := []Note{}
 
-		err = index.Index(key, note)
-		if err != nil {
-			// Error indexing this note; move on to the next note.
-			if verbose {
-				fmt.Fprintf(os.Stderr, "Error indexing note: key=%s, note=%v\n",
-					key, note)
-			}
-			continue
+	for _, note := range notes {
+		if Contains(note.Text, key) {
+			result = append(result, note)
 		}
 	}
 
-	return nil
+	return result, nil
 }
