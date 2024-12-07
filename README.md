@@ -66,11 +66,6 @@ Then if you search for "utility" like this:
 it will report something like this:
 
 ```
-Temporary directory for index: /tmp/vogonnote.bleve2477464051
-Search results: 1 matches, took 128.246µs
-
-Note 0 in file /home/someuser/Documents/vogonnote.dir/tests/2024-11-17.note
-Found note: 
 -------------------
 Date: 2024-11-16 00:00:00 +0000 UTC
 Text:
@@ -85,10 +80,20 @@ Never mind!
 It will never change the notes in any way. It just reads them, creates
 a search index and then searches for the user's key phrase in the index.
 
-vogonnote uses [Bleve](http://blevesearch.com/) for search. Every time
-it is run, it creates an index in a temporary directory and before
-exiting deletes the index directory, so it doesn't leave any traces
+Originally, vogonnote used [Bleve](http://blevesearch.com/) for search.
+Every time it was run, it would create an index in a temporary directory and
+before exiting deleted the index directory, so it wouldn't leave any traces
 behind.
+
+However, I found this too slow. Creating that index every time the program
+is run turned out to be too slow. So, I switched to using a simple check
+for substrings, which works for my current needs. For the current size of
+notes, the run time went from 5s down to 6ms.
+
+If I needed a smarter query, I could move back to Bleve and, instead of
+creating an index every time the program is run, I would check if there
+is any update in the notes, and only update the index if necessary.
+That would be more fun to code, but why do it if I don't need it?
 
 This utility is something I wrote for myself. It is deliberately a small
 program that does one thing - searches for my notes - and hopefully
